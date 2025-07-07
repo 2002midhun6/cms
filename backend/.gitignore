@@ -1,0 +1,71 @@
+# Python/Django
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+*.log
+*.pid
+*.seed
+*.sqlite3
+*.db
+venv/
+env/
+*.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Django specific
+/myproject/settings.py  # If it contains sensitive data; adjust path if needed
+/myproject/local_settings.py
+/myproject/staticfiles/
+/myproject/media/
+*.bak
+*.swp
+*.swo
+
+# PostgreSQL
+*.psql
+*.sql
+pgdata/
+postgresql.conf
+pg_hba.conf
+pg_ident.conf
+
+# React/Frontend
+/frontend/node_modules/
+/frontend/build/
+/frontend/.pnp
+/frontend/.pnp.js
+/frontend/coverage/
+/frontend/.DS_Store
+/frontend/.env
+/frontend/.env.local
+/frontend/.env.development.local
+/frontend/.env.test.local
+/frontend/.env.production.local
+/frontend/*.log
+/frontend/npm-debug.log*
+/frontend/yarn-debug.log*
+/frontend/yarn-error.log*
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# macOS
+.DS_Store
+
+# Miscellaneous
+*.bak
+*.cache
+*.class
+*.log
+*.swp
+*.swo
+/dist/
+/build/
