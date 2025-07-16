@@ -2,11 +2,15 @@ from django.shortcuts import render
 from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.parsers import MultiPartParser, FormParser
 from .models import Post, Comment, Like
 from .serializers import PostSerializer, CommentSerializer, LikeSerializer
 from django.contrib.auth import get_user_model
+import logging
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 class IsAuthorOrAdmin(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
@@ -18,25 +22,41 @@ class PostListCreateView(generics.ListCreateAPIView):
     queryset = Post.objects.all().order_by('-created_at')
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    parser_classes = [MultiPartParser, FormParser]  # Add these parsers for file uploads
 
     def create(self, request, *args, **kwargs):
-        # Debug print to check authentication
-        print(f"User authenticated: {request.user.is_authenticated}")
-        print(f"User: {request.user}")
-        print(f"Request headers: {dict(request.headers)}")
-        print(f"Request cookies: {request.COOKIES}")
-        
+        logger.info(f"POST request data: {request.data}")
+        logger.info(f"POST request files: {request.FILES}")
+       
         if not request.user.is_authenticated:
             return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
         
-        return super().create(request, *args, **kwargs)
+        # Get the serializer with context
+        serializer = self.get_serializer(data=request.data, context={'request': request})
+        
+        if serializer.is_valid():
+            try:
+                # Save the post with the current user as author
+                post = serializer.save(author=request.user)
+                logger.info(f"Post created successfully: {post.id}")
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                logger.error(f"Error creating post: {str(e)}")
+                return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            logger.error(f"Serializer validation errors: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def perform_create(self, serializer):
+        # This method is called by the parent class, but we're handling creation in create() method
+        # Keep this for compatibility but the actual creation logic is in create()
         serializer.save(author=self.request.user)
+
 class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     permission_classes = [IsAuthorOrAdmin]
+    parser_classes = [MultiPartParser, FormParser]  # Add these parsers for file uploads
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -44,6 +64,49 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
         instance.save()
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        logger.info(f"Updating post {instance.id} with data: {request.data}")
+        logger.info(f"Update request files: {request.FILES}")
+       
+        if not request.user.is_authenticated:
+            return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        # Check if user is the author or admin
+        if instance.author != request.user and not request.user.is_staff:
+            raise PermissionDenied("You don't have permission to edit this post.")
+        
+        # Get the serializer with context
+        partial = kwargs.pop('partial', False)
+        serializer = self.get_serializer(instance, data=request.data, partial=partial, context={'request': request})
+        
+        if serializer.is_valid():
+            try:
+                updated_post = serializer.save()
+                logger.info(f"Post updated successfully: {updated_post.id}")
+                return Response(serializer.data)
+            except Exception as e:
+                logger.error(f"Error updating post: {str(e)}")
+                return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            logger.error(f"Serializer validation errors: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        
+        if not request.user.is_authenticated:
+            return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        # Check if user is the author or admin
+        if instance.author != request.user and not request.user.is_staff:
+            raise PermissionDenied("You don't have permission to delete this post.")
+        
+        # Debug logging
+        logger.info(f"User {request.user.username} deleting post {instance.id}")
+        
+        return super().destroy(request, *args, **kwargs)
 
 class CommentListCreateView(generics.ListCreateAPIView):
     queryset = Comment.objects.all()
@@ -57,6 +120,44 @@ class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [IsAuthorOrAdmin]
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        
+        # Check if user is authenticated
+        if not request.user.is_authenticated:
+            return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        # Check if user is the author or admin
+        if instance.author != request.user and not request.user.is_staff:
+            raise PermissionDenied("You don't have permission to edit this comment.")
+        
+        # Add debug logging
+        logger.info(f"Updating comment {instance.id} with data: {request.data}")
+        
+        # Use partial update
+        partial = kwargs.pop('partial', True)
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        
+        if serializer.is_valid():
+            self.perform_update(serializer)
+            return Response(serializer.data)
+        else:
+            logger.error(f"Serializer errors: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        
+        # Check if user is authenticated
+        if not request.user.is_authenticated:
+            return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        # Check if user is the author or admin
+        if instance.author != request.user and not request.user.is_staff:
+            raise PermissionDenied("You don't have permission to delete this comment.")
+        
+        return super().destroy(request, *args, **kwargs)
 
 class CommentApprovalView(APIView):
     permission_classes = [permissions.IsAdminUser]

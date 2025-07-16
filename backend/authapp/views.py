@@ -14,8 +14,7 @@ User = get_user_model()
 @permission_classes([IsAuthenticated])
 def get_current_user(request):
     user = request.user
-    print('hy')
-    print(user)
+    
     return Response({
         'id': user.id,
         'username': user.username,
@@ -151,6 +150,7 @@ class UserListView(generics.ListCreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAdminUser]
+    
 
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
