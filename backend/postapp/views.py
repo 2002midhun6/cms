@@ -8,7 +8,7 @@ from .models import Post, Comment, Like
 from .serializers import PostSerializer, CommentSerializer, LikeSerializer
 from django.contrib.auth import get_user_model
 import logging
-
+from backend.authentication import IsNotBlocked
 User = get_user_model()
 logger = logging.getLogger(__name__)
 
@@ -21,8 +21,8 @@ class IsAuthorOrAdmin(permissions.BasePermission):
 class PostListCreateView(generics.ListCreateAPIView):
     queryset = Post.objects.all().order_by('-created_at')
     serializer_class = PostSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    parser_classes = [MultiPartParser, FormParser]  # Add these parsers for file uploads
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsNotBlocked]
+    parser_classes = [MultiPartParser, FormParser]  
 
     def create(self, request, *args, **kwargs):
         logger.info(f"POST request data: {request.data}")
@@ -31,12 +31,12 @@ class PostListCreateView(generics.ListCreateAPIView):
         if not request.user.is_authenticated:
             return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
         
-        # Get the serializer with context
+        
         serializer = self.get_serializer(data=request.data, context={'request': request})
         
         if serializer.is_valid():
             try:
-                # Save the post with the current user as author
+               
                 post = serializer.save(author=request.user)
                 logger.info(f"Post created successfully: {post.id}")
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -48,15 +48,14 @@ class PostListCreateView(generics.ListCreateAPIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def perform_create(self, serializer):
-        # This method is called by the parent class, but we're handling creation in create() method
-        # Keep this for compatibility but the actual creation logic is in create()
+        
         serializer.save(author=self.request.user)
 
 class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
-    permission_classes = [IsAuthorOrAdmin]
-    parser_classes = [MultiPartParser, FormParser]  # Add these parsers for file uploads
+    permission_classes = [IsAuthorOrAdmin, IsNotBlocked]
+    parser_classes = [MultiPartParser, FormParser]  
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -73,11 +72,11 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
         if not request.user.is_authenticated:
             return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
         
-        # Check if user is the author or admin
+       
         if instance.author != request.user and not request.user.is_staff:
             raise PermissionDenied("You don't have permission to edit this post.")
         
-        # Get the serializer with context
+       
         partial = kwargs.pop('partial', False)
         serializer = self.get_serializer(instance, data=request.data, partial=partial, context={'request': request})
         
@@ -99,11 +98,11 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
         if not request.user.is_authenticated:
             return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
         
-        # Check if user is the author or admin
+        
         if instance.author != request.user and not request.user.is_staff:
             raise PermissionDenied("You don't have permission to delete this post.")
         
-        # Debug logging
+        
         logger.info(f"User {request.user.username} deleting post {instance.id}")
         
         return super().destroy(request, *args, **kwargs)
@@ -111,7 +110,7 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
 class CommentListCreateView(generics.ListCreateAPIView):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsNotBlocked]
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -119,23 +118,23 @@ class CommentListCreateView(generics.ListCreateAPIView):
 class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
-    permission_classes = [IsAuthorOrAdmin]
+    permission_classes = [IsAuthorOrAdmin,IsNotBlocked]
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         
-        # Check if user is authenticated
+        
         if not request.user.is_authenticated:
             return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
         
-        # Check if user is the author or admin
+        
         if instance.author != request.user and not request.user.is_staff:
             raise PermissionDenied("You don't have permission to edit this comment.")
         
-        # Add debug logging
+        
         logger.info(f"Updating comment {instance.id} with data: {request.data}")
         
-        # Use partial update
+        
         partial = kwargs.pop('partial', True)
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         
@@ -149,18 +148,18 @@ class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         
-        # Check if user is authenticated
+        
         if not request.user.is_authenticated:
             return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
         
-        # Check if user is the author or admin
+        
         if instance.author != request.user and not request.user.is_staff:
             raise PermissionDenied("You don't have permission to delete this comment.")
         
         return super().destroy(request, *args, **kwargs)
 
 class CommentApprovalView(APIView):
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.IsAdminUser, IsNotBlocked]
 
     def post(self, request, pk):
         try:
@@ -172,7 +171,7 @@ class CommentApprovalView(APIView):
             return Response({'error': 'Comment not found'}, status=status.HTTP_404_NOT_FOUND)
 
 class LikeView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsNotBlocked]
 
     def post(self, request, pk):
         try:

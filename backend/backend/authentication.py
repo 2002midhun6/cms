@@ -4,7 +4,7 @@ from rest_framework_simplejwt.tokens import UntypedToken
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from django.contrib.auth import get_user_model
 from rest_framework import exceptions
-
+from rest_framework import permissions
 User = get_user_model()
 
 class CookieJWTAuthentication(JWTAuthentication):
@@ -28,3 +28,13 @@ class CookieJWTAuthentication(JWTAuthentication):
             return None
         except Exception:
             return None
+
+
+class IsNotBlocked(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if request.user and request.user.is_authenticated:
+            if request.user.is_blocked:
+                print(f"Blocked user {request.user.username} attempted to access {view.__class__.__name__}")
+                return False
+            return True
+        return False

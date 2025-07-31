@@ -8,10 +8,11 @@ from .serializers import UserSerializer, CustomTokenObtainPairSerializer
 from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
+from backend.authentication import IsNotBlocked
 User = get_user_model()
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsNotBlocked])
 def get_current_user(request):
     user = request.user
     
@@ -19,11 +20,12 @@ def get_current_user(request):
         'id': user.id,
         'username': user.username,
         'email': user.email,
-       
+       'is_blocked': user.is_blocked,
         'is_staff': user.is_staff,
         'is_superuser': user.is_superuser,
         
     })
+
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
@@ -34,6 +36,11 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             serializer.is_valid(raise_exception=True)
             user = serializer.user
             print('Authenticated user:', user)
+            if user.is_blocked:
+                return Response(
+                    {'error': 'This account is blocked'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
             tokens = serializer.validated_data
             response = Response({
                 'user': {
@@ -49,7 +56,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 key='access_token',
                 value=tokens['access'],
                 httponly=True,
-                secure=False,  # Set to True in production with HTTPS
+                secure=False,  
                 samesite='Lax'
             )
             response.set_cookie(
@@ -73,24 +80,31 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             )
 
 class CustomTokenRefreshView(TokenRefreshView):
-    """Custom token refresh view that handles cookies"""
-    
     def post(self, request, *args, **kwargs):
-        # Get refresh token from cookies
         refresh_token = request.COOKIES.get('refresh_token')
         
         if not refresh_token:
+            print("No refresh token found in cookies")  # Debug log
             return Response({
                 'error': 'No refresh token found in cookies'
             }, status=status.HTTP_401_UNAUTHORIZED)
         
-        # Add refresh token to request data
-        request.data['refresh'] = refresh_token
-        
         try:
+            # Decode refresh token to get user
+            token = RefreshToken(refresh_token)
+            user_id = token.payload.get('user_id')
+            user = User.objects.get(id=user_id)
+            
+            # Check if user is blocked
+            if user.is_blocked:
+                print(f"Blocked user {user.username} attempted token refresh")  # Debug log
+                return Response({
+                    'error': 'This account is blocked'
+                }, status=status.HTTP_403_FORBIDDEN)
+                
+            request.data['refresh'] = refresh_token
             response = super().post(request, *args, **kwargs)
             
-            # If successful, set the new access token in cookies
             if response.status_code == 200:
                 new_access_token = response.data.get('access')
                 if new_access_token:
@@ -102,7 +116,6 @@ class CustomTokenRefreshView(TokenRefreshView):
                         samesite='Lax'
                     )
                 
-                # Handle refresh token rotation
                 new_refresh_token = response.data.get('refresh')
                 if new_refresh_token:
                     response.set_cookie(
@@ -113,10 +126,16 @@ class CustomTokenRefreshView(TokenRefreshView):
                         samesite='Lax'
                     )
             
+            print(f"Token refreshed successfully for user {user.username}")  # Debug log
             return response
             
+        except User.DoesNotExist:
+            print("Token refresh failed: User not found")  # Debug log
+            return Response({
+                'error': 'Invalid refresh token'
+            }, status=status.HTTP_401_UNAUTHORIZED)
         except Exception as e:
-            print('Token refresh error:', str(e))
+            print(f"Token refresh error: {str(e)}")  # Debug log
             return Response({
                 'error': 'Token refresh failed'
             }, status=status.HTTP_401_UNAUTHORIZED)
@@ -149,10 +168,10 @@ class LogoutView(APIView):
 class UserListView(generics.ListCreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.IsAdminUser, IsNotBlocked]
     
 
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.IsAdminUser, IsNotBlocked]

@@ -6,6 +6,7 @@ class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
     bio = models.TextField(blank=True, null=True)
     profile_picture = models.CharField(max_length=255, blank=True, null=True)
+    is_blocked = models.BooleanField(default=False, blank=True, null=True)
 
     def __str__(self):
         return self.username
