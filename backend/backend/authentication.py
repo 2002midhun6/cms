@@ -34,7 +34,7 @@ class IsNotBlocked(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.user and request.user.is_authenticated:
             if request.user.is_blocked:
-                print(f"Blocked user {request.user.username} attempted to access {view.__class__.__name__}")
+               
                 return False
             return True
         return False

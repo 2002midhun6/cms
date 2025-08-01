@@ -2,32 +2,16 @@
 Production settings.
 """
 from .base import *
-import dj_database_url
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
 # Allowed hosts - configure based on your domain
-ALLOWED_HOSTS = [
-    os.getenv('ALLOWED_HOST', 'yourdomain.com'),
-    os.getenv('ALLOWED_HOST_WWW', 'www.yourdomain.com'),
-]
-
-# Parse additional allowed hosts from environment variable
-additional_hosts = os.getenv('ADDITIONAL_ALLOWED_HOSTS', '')
-if additional_hosts:
-    ALLOWED_HOSTS.extend([host.strip() for host in additional_hosts.split(',')])
+ALLOWED_HOSTS = ['blog-api.midhung.in','51.20.119.53']
 
 # CORS settings for production
-CORS_ALLOWED_ORIGINS = [
-    f"https://{host}" for host in ALLOWED_HOSTS if host and not host.startswith('.')
-]
+CORS_ALLOWED_ORIGINS = ['https://blog.midhung.in']
 
 # Add specific frontend URLs
-frontend_urls = os.getenv('FRONTEND_URLS', '')
-if frontend_urls:
-    CORS_ALLOWED_ORIGINS.extend([url.strip() for url in frontend_urls.split(',')])
-
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = False
 
@@ -50,15 +34,12 @@ SIMPLE_JWT.update({
 })
 
 # Database configuration with fallback to DATABASE_URL
-if os.getenv('DATABASE_URL'):
-    DATABASES = {
-        'default': dj_database_url.parse(
-            os.getenv('DATABASE_URL'),
-            conn_max_age=600,
-            conn_health_checks=True,
-        )
+DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-
 # Redis configuration for production
 CACHES = {
     'default': {

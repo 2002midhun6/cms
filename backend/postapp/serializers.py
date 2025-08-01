@@ -7,7 +7,7 @@ import logging
 
 User = get_user_model()
 
-# Add logging for debugging
+
 logger = logging.getLogger(__name__)
 
 class UserSerializer(serializers.ModelSerializer):

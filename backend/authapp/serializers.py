@@ -40,7 +40,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         try:
             user = User.objects.get(username=username)
             if user.is_blocked:
-                print(f"Blocked user {user.username} attempted login")
+               
                 raise serializers.ValidationError({'error': 'This account is blocked'})
         except User.DoesNotExist:
             pass  # Let super().validate handle invalid username
@@ -48,16 +48,16 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         # Proceed with default validation
         try:
             data = super().validate(attrs)
-            print(f"User {self.user.username} authenticated successfully")
+            
             return data
         except AuthenticationFailed:
-            print("Authentication failed: Invalid username or password")
+            
             raise serializers.ValidationError({'error': 'Invalid username or password'})
 
     @classmethod
     def get_token(cls, user):
         if user.is_blocked:
-            print(f"Blocked user {user.username} attempted token generation")
+            
             raise serializers.ValidationError({'error': 'This account is blocked'})
         token = super().get_token(user)
         token['username'] = user.username

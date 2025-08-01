@@ -30,12 +30,12 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
     def post(self, request, *args, **kwargs):
-        print('Login request data:', request.data)
+       
         try:
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             user = serializer.user
-            print('Authenticated user:', user)
+            
             if user.is_blocked:
                 return Response(
                     {'error': 'This account is blocked'},
@@ -73,7 +73,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 status=status.HTTP_401_UNAUTHORIZED
             )
         except Exception as e:
-            print('Authentication error:', str(e))
+           
             return Response(
                 {'error': 'An unexpected error occurred'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -84,20 +84,20 @@ class CustomTokenRefreshView(TokenRefreshView):
         refresh_token = request.COOKIES.get('refresh_token')
         
         if not refresh_token:
-            print("No refresh token found in cookies")  # Debug log
+           
             return Response({
                 'error': 'No refresh token found in cookies'
             }, status=status.HTTP_401_UNAUTHORIZED)
         
         try:
-            # Decode refresh token to get user
+            
             token = RefreshToken(refresh_token)
             user_id = token.payload.get('user_id')
             user = User.objects.get(id=user_id)
             
             # Check if user is blocked
             if user.is_blocked:
-                print(f"Blocked user {user.username} attempted token refresh")  # Debug log
+                
                 return Response({
                     'error': 'This account is blocked'
                 }, status=status.HTTP_403_FORBIDDEN)
@@ -126,16 +126,16 @@ class CustomTokenRefreshView(TokenRefreshView):
                         samesite='Lax'
                     )
             
-            print(f"Token refreshed successfully for user {user.username}")  # Debug log
+             # Debug log
             return response
             
         except User.DoesNotExist:
-            print("Token refresh failed: User not found")  # Debug log
+         
             return Response({
                 'error': 'Invalid refresh token'
             }, status=status.HTTP_401_UNAUTHORIZED)
         except Exception as e:
-            print(f"Token refresh error: {str(e)}")  # Debug log
+            
             return Response({
                 'error': 'Token refresh failed'
             }, status=status.HTTP_401_UNAUTHORIZED)
@@ -154,7 +154,7 @@ class LogoutView(APIView):
     def post(self, request):
         try:
             refresh_token = request.COOKIES.get('refresh_token')
-            print('Logout refresh token:', refresh_token)
+            
             if refresh_token:
                 token = RefreshToken(refresh_token)
                 token.blacklist()
