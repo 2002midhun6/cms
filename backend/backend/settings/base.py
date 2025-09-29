@@ -6,7 +6,9 @@ from dotenv import load_dotenv
 import os
 from pathlib import Path
 from datetime import timedelta
+import logging
 
+logger = logging.getLogger(__name__)
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -14,6 +16,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+logger.info(f"Secret key loaded{SECRET_KEY}")
+environment = os.getenv('DJANGO_ENVIRONMENT', 'local')
+logger.info(f"This is env:  {environment}")
 
 # Application definition
 INSTALLED_APPS = [
