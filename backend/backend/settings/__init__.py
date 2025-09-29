@@ -3,9 +3,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-environment = os.getenv('DJANGO_ENVIRONMENT', 'local')
-logger.info(f"This is env:  {environment}")
-print(f"This is env:  {environment}")
+environment = "production"
+
 
 if environment == 'production':
     logger.info("production this is executed")
