@@ -16,9 +16,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
-logger.info(f"Secret key loaded{SECRET_KEY}")
+logger.warning(f"Secret key loaded{SECRET_KEY}")
+print(f"Secret key loaded{SECRET_KEY}")
 environment = os.getenv('DJANGO_ENVIRONMENT', 'local')
-logger.info(f"This is env:  {environment}")
+print(f"This is env:  {environment}")
 
 # Application definition
 INSTALLED_APPS = [
