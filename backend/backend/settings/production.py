@@ -34,13 +34,6 @@ SIMPLE_JWT.update({
     'AUTH_COOKIE_SAMESITE': 'Lax',
 })
 
-# Database configuration with fallback to DATABASE_URL
-DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
 # Redis configuration for production
 CACHES = {
     'default': {

@@ -43,15 +43,6 @@ INSTALLED_APPS += [
     # 'debug_toolbar',  # Uncomment if using Django Debug Toolbar
 ]
 
-# Database fallback for development
-if not all([os.getenv('DB_NAME'), os.getenv('DB_USER'), os.getenv('DB_PASSWORD')]):
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
-
 # Static files for development
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 

@@ -3,7 +3,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-environment = "production"
+environment = "local"
 
 
 if environment == 'production':
