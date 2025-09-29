@@ -7,10 +7,8 @@ environment = "production"
 
 
 if environment == 'production':
-    logger.info("production this is executed")
     from .production import *
 elif environment == 'staging':
-    logger.info("staging this is executed")
     from .production import *
     DEBUG = True
 else:

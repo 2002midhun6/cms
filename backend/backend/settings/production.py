@@ -6,8 +6,9 @@ from .base import *
 DEBUG = False
 
 # Allowed hosts - configure based on your domain
+print("Production worked")
 ALLOWED_HOSTS = ['blog-api.midhung.in','13.201.92.201']
-
+print(ALLOWED_HOSTS)
 # CORS settings for production
 CORS_ALLOWED_ORIGINS = ['https://blog.midhung.in']
 
