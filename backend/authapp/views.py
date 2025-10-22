@@ -63,7 +63,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 key='refresh_token',
                 value=tokens['refresh'],
                 httponly=True,
-                secure=False,  # Set to True in production with HTTPS
+                secure=False, 
                 samesite='Lax'
             )
             return response
@@ -95,7 +95,7 @@ class CustomTokenRefreshView(TokenRefreshView):
             user_id = token.payload.get('user_id')
             user = User.objects.get(id=user_id)
             
-            # Check if user is blocked
+          
             if user.is_blocked:
                 
                 return Response({
@@ -126,7 +126,7 @@ class CustomTokenRefreshView(TokenRefreshView):
                         samesite='Lax'
                     )
             
-             # Debug log
+            
             return response
             
         except User.DoesNotExist:
